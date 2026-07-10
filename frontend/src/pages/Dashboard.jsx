@@ -1,6 +1,6 @@
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-import Usercard from "../components/Usercard";
+import Sidebar from "../components/dashboard/Sidebar";
+import Navbar from "../components/dashboard/Navbar";
+import Usercard from "../components/dashboard/Usercard";
 import { Link } from "react-router-dom";
 
 export default function Dashboard() {
