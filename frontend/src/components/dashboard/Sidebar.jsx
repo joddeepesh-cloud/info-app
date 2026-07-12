@@ -17,6 +17,10 @@ export default function Sidebar() {
           🏠 Dashboard
         </Link>
 
+        <Link to="/users">
+         👥 Users
+        </Link>
+
         <Link
           to="/chat"
           className="block hover:bg-slate-800 p-3 rounded-xl transition"

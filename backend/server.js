@@ -1,7 +1,18 @@
 require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+const chatRoutes = require("./routes/chatRoutes");
+const userRoutes = require("./routes/userRoutes");
+
+app.use("/chat", chatRoutes);
+app.use("/users", userRoutes);
+
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -10,14 +21,8 @@ const http = require("http");
 const { initSocket } = require("./socket/socket");
 
 const User = require("./models/User");
-const chatRoutes = require("./routes/chatRoutes");
 
-const app = express();
 
-app.use(cors());
-app.use(express.json());
-
-app.use("/chat", chatRoutes);
 
 // MongoDB
 mongoose
@@ -49,11 +54,30 @@ app.post("/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
-      username,
-      password: hashedPassword,
-      role: "employee",
-    });
+   const user = await User.create({
+  username,
+  password: hashedPassword,
+
+  fullName: username,
+
+  employeeId: "EMP" + Date.now(),
+
+  department: "Development",
+
+  designation: "Software Engineer",
+
+  email: "",
+
+  phone: "",
+
+  avatar: "",
+
+  bio: "",
+
+  status: "Online",
+
+  role: "employee",
+});
 
     res.json({
       success: true,
