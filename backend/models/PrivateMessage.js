@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const messageSchema = new mongoose.Schema(
+const privateMessageSchema = new mongoose.Schema(
   {
     sender: {
       type: String,
@@ -8,31 +8,28 @@ const messageSchema = new mongoose.Schema(
     },
     receiver: {
       type: String,
-      default: null, // set to null for group messages
+      required: true,
     },
-    groupId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Group",
-      default: null, // set to null for private direct messages
-    },
-    content: {
+    text: {
       type: String,
-      default: "", // maps to text content of the message
+      default: "",
     },
-    attachments: [
-      {
-        fileUrl: { type: String, default: "" },
-        fileName: { type: String, default: "" }
-      }
-    ],
-    read: {
-      type: Boolean,
-      default: false,
+    messageType: {
+      type: String,
+      enum: ["text", "file"],
+      default: "text",
     },
-    // Preserve other functional properties for system stability (edit, delete, disappearing DMs, replies, reactions)
+    fileUrl: {
+      type: String,
+      default: "",
+    },
+    fileName: {
+      type: String,
+      default: "",
+    },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Message",
+      ref: "PrivateMessage",
       default: null,
     },
     status: {
@@ -72,6 +69,6 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
-messageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+privateMessageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-module.exports = mongoose.model("Message", messageSchema);
+module.exports = mongoose.model("PrivateMessage", privateMessageSchema);

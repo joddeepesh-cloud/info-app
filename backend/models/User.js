@@ -68,6 +68,11 @@ const UserSchema = new mongoose.Schema(
         type:String,
         enum:["admin","manager","employee"],
         default:"employee"
+    },
+
+    isSuspended:{
+        type:Boolean,
+        default:false
     }
 
 },{
