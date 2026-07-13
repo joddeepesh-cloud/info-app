@@ -44,7 +44,7 @@ export default function Login() {
     try {
       setLoading(true);
 
-      const res = await axios.post("http://localhost:5050/login", {
+      const res = await axios.post(window.API_BASE_URL + "/login", {
         username: username.trim(),
         password: password.trim(),
       });

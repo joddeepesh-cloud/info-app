@@ -70,7 +70,7 @@ export default function Settings() {
     }
 
     try {
-      const res = await axios.put("http://localhost:5050/chat/settings/workspace", {
+      const res = await axios.put(window.API_BASE_URL + "/chat/settings/workspace", {
         automaticTime,
         timezone,
         manualTimeOffset: calculatedOffset

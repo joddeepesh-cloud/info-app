@@ -26,7 +26,7 @@ export function TimeProvider({ children }) {
 
   const fetchSettings = async () => {
     try {
-      const res = await axios.get("http://localhost:5050/chat/settings/workspace");
+      const res = await axios.get(window.API_BASE_URL + "/chat/settings/workspace");
       if (res.data) {
         setSettings(res.data);
       }

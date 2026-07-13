@@ -1,5 +1,5 @@
-- `[x]` Fix `getWorkspaceTime` destructuring crash inside `frontend/src/pages/Chat.jsx`
-- `[x]` Implement root endpoints `/groups`, `/messages`, `/groupmessages` (`backend/server.js`)
-- `[x]` Wire frontend chat component to hit the root REST APIs
-- `[x]` Configure live socket refresh logic for `group-created` events to auto-reload sidebar lists without manual refresh
-- `[x]` Verify compilations and write walkthrough guides
+- `[x]` Create environment variable configuration (.env)
+- `[x]` Implement global dynamic window.API_BASE_URL (main.jsx)
+- `[x]` Refactor all axios and fetch request target URLs to use window.API_BASE_URL
+- `[x]` Update Socket.IO initialization parameters in useSocket.js
+- `[x]` Verify production builds and log file walkthroughs

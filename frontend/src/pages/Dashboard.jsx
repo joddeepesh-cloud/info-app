@@ -125,32 +125,32 @@ export default function Dashboard() {
 
   const loadGroups = async () => {
     const res = await axios.get(
-      `http://localhost:5050/chat/groups/list?username=${loggedUser.username}`
+      `${window.API_BASE_URL}/chat/groups/list?username=${loggedUser.username}`
     );
     setGroups(res.data);
   };
 
   const loadActiveBroadcasts = async () => {
-    const res = await axios.get("http://localhost:5050/chat/broadcasts/active");
+    const res = await axios.get(window.API_BASE_URL + "/chat/broadcasts/active");
     setActiveBroadcasts(res.data.slice(0, 5));
   };
 
   const loadRecentDMs = async () => {
     const res = await axios.get(
-      `http://localhost:5050/chat/widgets/recent-dms?username=${loggedUser.username}`
+      `${window.API_BASE_URL}/chat/widgets/recent-dms?username=${loggedUser.username}`
     );
     setRecentDMs(res.data.slice(0, 5));
   };
 
   const loadUnreadNotifications = async () => {
     const res = await axios.get(
-      `http://localhost:5050/chat/widgets/unread-notifications?username=${loggedUser.username}`
+      `${window.API_BASE_URL}/chat/widgets/unread-notifications?username=${loggedUser.username}`
     );
     setNotifications(res.data.slice(0, 5));
   };
 
   const loadWorkspaceActivity = async () => {
-    const res = await axios.get("http://localhost:5050/chat/widgets/workspace-activity");
+    const res = await axios.get(window.API_BASE_URL + "/chat/widgets/workspace-activity");
     setWorkspaceActivity(res.data.slice(0, 6));
   };
 

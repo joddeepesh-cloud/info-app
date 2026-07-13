@@ -445,7 +445,7 @@ export default function Chat() {
 
   const loadColleagues = async () => {
     try {
-      const res = await axios.get("http://localhost:5050/users");
+      const res = await axios.get(window.API_BASE_URL + "/users");
       setUsers(res.data.filter((u) => u.username !== sender && !u.isSuspended));
     } catch (err) {
       console.error(err);
@@ -455,7 +455,7 @@ export default function Chat() {
   const loadGroups = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:5050/groups?username=${sender}`
+        `${window.API_BASE_URL}/groups?username=${sender}`
       );
       setGroups(res.data);
     } catch (err) {
@@ -466,7 +466,7 @@ export default function Chat() {
   const loadGroupMetadata = async (groupId) => {
     try {
       const res = await axios.get(
-        `http://localhost:5050/groups?username=${sender}`
+        `${window.API_BASE_URL}/groups?username=${sender}`
       );
       const matched = res.data.find((g) => g._id === groupId);
       setGroupMetadata(matched);
@@ -481,7 +481,7 @@ export default function Chat() {
       if (target.members) {
         // Group Chat load
         const res = await axios.get(
-          `http://localhost:5050/groupmessages?groupId=${target._id}`
+          `${window.API_BASE_URL}/groupmessages?groupId=${target._id}`
         );
         setMessages(res.data);
         await loadGroupMetadata(target._id);
@@ -492,7 +492,7 @@ export default function Chat() {
       } else {
         // Private Chat load
         const res = await axios.get(
-          `http://localhost:5050/messages?sender=${sender}&receiver=${target.username}`
+          `${window.API_BASE_URL}/messages?sender=${sender}&receiver=${target.username}`
         );
         const visible = res.data.filter((m) => !m.deletedForMe?.includes(sender));
         setMessages(visible);
@@ -511,7 +511,7 @@ export default function Chat() {
 
   const markChatRead = async (colleagueUsername) => {
     try {
-      await axios.put("http://localhost:5050/chat/read", {
+      await axios.put(window.API_BASE_URL + "/chat/read", {
         sender: colleagueUsername,
         receiver: sender
       });
@@ -601,7 +601,7 @@ export default function Chat() {
 
     if (attachedFile) {
       try {
-        const uploadRes = await axios.post("http://localhost:5050/chat/upload", {
+        const uploadRes = await axios.post(window.API_BASE_URL + "/chat/upload", {
           fileName: attachedFile.name,
           fileData: attachedFile.base64
         });
@@ -631,7 +631,7 @@ export default function Chat() {
     };
 
     try {
-      const endpoint = isGroupChat ? "http://localhost:5050/groupmessages" : "http://localhost:5050/messages";
+      const endpoint = isGroupChat ? window.API_BASE_URL + "/groupmessages" : window.API_BASE_URL + "/messages";
       const res = await axios.post(endpoint, {
         ...payload,
         content: payload.text
@@ -665,7 +665,7 @@ export default function Chat() {
     try {
       const textToSave = isGroupChat ? editInputText : encryptText(editInputText);
 
-      const res = await axios.put(`http://localhost:5050/chat/edit/${messageId}`, {
+      const res = await axios.put(`${window.API_BASE_URL}/chat/edit/${messageId}`, {
         text: textToSave
       });
       if (res.data.success) {
@@ -694,7 +694,7 @@ export default function Chat() {
   // Delete message handlers
   const handleDeleteForMe = async (messageId) => {
     try {
-      const res = await axios.put(`http://localhost:5050/chat/delete-for-me/${messageId}`, {
+      const res = await axios.put(`${window.API_BASE_URL}/chat/delete-for-me/${messageId}`, {
         username: sender
       });
       if (res.data.success) {
@@ -707,7 +707,7 @@ export default function Chat() {
 
   const handleDeleteForEveryone = async (messageId) => {
     try {
-      const res = await axios.put(`http://localhost:5050/chat/delete-for-everyone/${messageId}`);
+      const res = await axios.put(`${window.API_BASE_URL}/chat/delete-for-everyone/${messageId}`);
       if (res.data.success) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -744,7 +744,7 @@ export default function Chat() {
     const urlEndpoint = isAlreadyPinned ? "unpin" : "pin";
 
     try {
-      const res = await axios.put(`http://localhost:5050/chat/groups/${activeColleague._id}/${urlEndpoint}/${msg._id}`);
+      const res = await axios.put(`${window.API_BASE_URL}/chat/groups/${activeColleague._id}/${urlEndpoint}/${msg._id}`);
       if (res.data.success) {
         setGroupMetadata(res.data.group);
         socket.emit("group-pin-change", { groupId: activeColleague._id });
@@ -758,7 +758,7 @@ export default function Chat() {
   // Message Reaction API
   const handleToggleReaction = async (msgId, emoji) => {
     try {
-      const res = await axios.put(`http://localhost:5050/chat/react/${msgId}`, {
+      const res = await axios.put(`${window.API_BASE_URL}/chat/react/${msgId}`, {
         username: sender,
         emoji
       });
@@ -809,7 +809,7 @@ export default function Chat() {
     };
 
     try {
-      const endpoint = isTargetGroup ? "http://localhost:5050/groupmessages" : "http://localhost:5050/messages";
+      const endpoint = isTargetGroup ? window.API_BASE_URL + "/groupmessages" : window.API_BASE_URL + "/messages";
       const res = await axios.post(endpoint, {
         ...payload,
         content: payload.text
@@ -846,8 +846,8 @@ export default function Chat() {
     }
     try {
       const endpoint = isGroupChat 
-        ? `http://localhost:5050/chat/${sender}/${activeColleague._id}/search?q=${val}`
-        : `http://localhost:5050/chat/${sender}/${activeColleague.username}/search?q=${val}`;
+        ? `${window.API_BASE_URL}/chat/${sender}/${activeColleague._id}/search?q=${val}`
+        : `${window.API_BASE_URL}/chat/${sender}/${activeColleague.username}/search?q=${val}`;
       const res = await axios.get(endpoint);
       setSearchResults(res.data);
     } catch (err) {

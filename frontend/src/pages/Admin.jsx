@@ -106,7 +106,7 @@ export default function Admin() {
 
   const loadEmployees = async () => {
     try {
-      const res = await axios.get("http://localhost:5050/users");
+      const res = await axios.get(window.API_BASE_URL + "/users");
       setEmployees(res.data);
     } catch (err) {
       console.error(err);
@@ -115,7 +115,7 @@ export default function Admin() {
 
   const loadGroups = async () => {
     try {
-      const res = await axios.get(`http://localhost:5050/chat/groups/list?username=${loggedUser.username}`);
+      const res = await axios.get(`${window.API_BASE_URL}/chat/groups/list?username=${loggedUser.username}`);
       setGroups(res.data);
     } catch (err) {
       console.error(err);
@@ -124,7 +124,7 @@ export default function Admin() {
 
   const loadBroadcasts = async () => {
     try {
-      const res = await axios.get("http://localhost:5050/chat/broadcasts/all");
+      const res = await axios.get(window.API_BASE_URL + "/chat/broadcasts/all");
       setBroadcasts(res.data);
     } catch (err) {
       console.error(err);
@@ -177,7 +177,7 @@ export default function Admin() {
           bio: empBio,
           role: empRole
         };
-        await axios.put(`http://localhost:5050/users/${editingEmpId}`, payload);
+        await axios.put(`${window.API_BASE_URL}/users/${editingEmpId}`, payload);
         alert("Employee updated successfully");
         logAuditAction(`Admin edited colleague profile: ${empUsername}`);
       } else {
@@ -188,7 +188,7 @@ export default function Admin() {
         }
 
         // a. Register credential
-        const regRes = await axios.post("http://localhost:5050/register", {
+        const regRes = await axios.post(window.API_BASE_URL + "/register", {
           username: empUsername,
           password: empPassword
         });
@@ -208,7 +208,7 @@ export default function Admin() {
           bio: empBio,
           role: empRole
         };
-        await axios.put(`http://localhost:5050/users/${regRes.data.user._id}`, payload);
+        await axios.put(`${window.API_BASE_URL}/users/${regRes.data.user._id}`, payload);
         alert("Colleague registered successfully");
         logAuditAction(`Admin registered new colleague credentials: ${empUsername}`);
       }
@@ -235,7 +235,7 @@ export default function Admin() {
   const handleDeleteEmp = async (id, name) => {
     if (!window.confirm("Are you sure you want to remove this employee from workspace?")) return;
     try {
-      await axios.delete(`http://localhost:5050/users/${id}`);
+      await axios.delete(`${window.API_BASE_URL}/users/${id}`);
       alert("Colleague removed");
       logAuditAction(`Admin deleted colleague credentials: ${name}`);
       loadEmployees();
@@ -250,7 +250,7 @@ export default function Admin() {
     const actionText = nextState ? "suspend" : "reactivate";
     if (!window.confirm(`Are you sure you want to ${actionText} colleague ${emp.username}?`)) return;
     try {
-      await axios.put(`http://localhost:5050/users/${emp._id}`, {
+      await axios.put(`${window.API_BASE_URL}/users/${emp._id}`, {
         isSuspended: nextState
       });
       alert(`Colleague account is now ${nextState ? "suspended" : "active"}`);
@@ -268,7 +268,7 @@ export default function Admin() {
       return;
     }
     try {
-      await axios.put(`http://localhost:5050/users/${resettingEmp._id}`, {
+      await axios.put(`${window.API_BASE_URL}/users/${resettingEmp._id}`, {
         password: newPassword
       });
       alert(`Password reset successfully for user: ${resettingEmp.username}`);
@@ -308,11 +308,11 @@ export default function Admin() {
 
     try {
       if (editingGroupId) {
-        await axios.put(`http://localhost:5050/chat/groups/${editingGroupId}`, payload);
+        await axios.put(`${window.API_BASE_URL}/chat/groups/${editingGroupId}`, payload);
         alert("Group channel updated successfully");
         logAuditAction(`Admin modified group channel info: #${groupName}`);
       } else {
-        const res = await axios.post("http://localhost:5050/chat/groups/create", payload);
+        const res = await axios.post(window.API_BASE_URL + "/chat/groups/create", payload);
         if (res.data.success) {
           socket.emit("join-group", { groupId: res.data.group._id });
           alert("Group channel created successfully");
@@ -338,7 +338,7 @@ export default function Admin() {
   const handleDeleteGroup = async (id, name) => {
     if (!window.confirm("Are you sure you want to delete this channel?")) return;
     try {
-      await axios.delete(`http://localhost:5050/chat/groups/${id}`);
+      await axios.delete(`${window.API_BASE_URL}/chat/groups/${id}`);
       alert("Channel deleted");
       logAuditAction(`Admin deleted group channel: #${name}`);
       loadGroups();
@@ -389,7 +389,7 @@ export default function Admin() {
     if (bcFile) {
       setUploadingFile(true);
       try {
-        const uploadRes = await axios.post("http://localhost:5050/chat/upload", {
+        const uploadRes = await axios.post(window.API_BASE_URL + "/chat/upload", {
           fileName: bcFile.name,
           fileData: bcFile.base64
         });
@@ -416,7 +416,7 @@ export default function Admin() {
     };
 
     try {
-      await axios.post("http://localhost:5050/chat/broadcasts/create", payload);
+      await axios.post(window.API_BASE_URL + "/chat/broadcasts/create", payload);
       alert(isScheduled ? "Broadcast scheduled successfully" : "Broadcast dispatched immediately");
       logAuditAction(`Admin dispatched system announcement notice: "${bcText.substring(0, 20)}..."`);
       setBcText("");
