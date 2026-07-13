@@ -1,0 +1,5 @@
+- `[x]` Fix `getWorkspaceTime` destructuring crash inside `frontend/src/pages/Chat.jsx`
+- `[x]` Implement root endpoints `/groups`, `/messages`, `/groupmessages` (`backend/server.js`)
+- `[x]` Wire frontend chat component to hit the root REST APIs
+- `[x]` Configure live socket refresh logic for `group-created` events to auto-reload sidebar lists without manual refresh
+- `[x]` Verify compilations and write walkthrough guides

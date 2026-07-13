@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/Notfound";
+import Users from "./pages/Users";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -14,7 +16,9 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
+        <Route path="/users" element={<Users />} />
       </Routes>
     </BrowserRouter>
   );
