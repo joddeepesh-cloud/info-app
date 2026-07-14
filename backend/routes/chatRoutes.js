@@ -25,7 +25,8 @@ const {
   getRecentDMs,
   getUnreadNotifications,
   getRecentFiles,
-  getWorkspaceActivity
+  getWorkspaceActivity,
+  leaveGroup
 } = require("../controllers/chatController");
 
 router.post("/send", sendMessage);
@@ -44,6 +45,7 @@ router.get("/groups/list", getGroups); // list groups for user
 router.post("/groups/create", createGroup);
 router.put("/groups/:groupId", editGroup);
 router.delete("/groups/:groupId", deleteGroup);
+router.put("/groups/:groupId/leave", leaveGroup);
 router.put("/groups/:groupId/pin/:messageId", pinMessage);
 router.put("/groups/:groupId/unpin/:messageId", unpinMessage);
 

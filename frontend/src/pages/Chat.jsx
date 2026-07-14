@@ -26,7 +26,10 @@ import {
   IoPinOutline,
   IoPin,
   IoArrowRedoOutline,
-  IoArrowRedo
+  IoArrowRedo,
+  IoStarOutline,
+  IoStar,
+  IoRefreshOutline
 } from "react-icons/io5";
 import socket from "../hooks/useSocket";
 import Sidebar from "../components/dashboard/Sidebar";
@@ -150,6 +153,12 @@ export default function Chat() {
   const [typingUsers, setTypingUsers] = useState([]); 
   const [unreadCounts, setUnreadCounts] = useState({}); 
 
+  // Advanced features states
+  const [starredMessages, setStarredMessages] = useState([]);
+  const [starredPanelOpen, setStarredPanelOpen] = useState(false);
+  const [displayLimit, setDisplayLimit] = useState(35);
+  const [failedMessages, setFailedMessages] = useState([]);
+
   const typingTimeout = useRef(null);
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -189,6 +198,26 @@ export default function Chat() {
     } catch (e) {
       console.log("Audio chime blocked by browser settings", e);
     }
+  };
+
+  // Load starred messages
+  useEffect(() => {
+    if (loggedUser?.username) {
+      const stored = localStorage.getItem("starredMessages_" + loggedUser.username);
+      if (stored) setStarredMessages(JSON.parse(stored));
+    }
+  }, [loggedUser]);
+
+  const handleToggleStar = (msgId) => {
+    setStarredMessages((prev) => {
+      const isCurrentlyStarred = prev.includes(msgId);
+      const updated = isCurrentlyStarred
+        ? prev.filter((id) => id !== msgId)
+        : [...prev, msgId];
+      localStorage.setItem("starredMessages_" + loggedUser?.username, JSON.stringify(updated));
+      toast(isCurrentlyStarred ? "Removed from Stars" : "Added to Stars", { icon: "⭐" });
+      return updated;
+    });
   };
 
   // Keyboard Shortcuts (ESC to cancel replies/forwards/searches)
@@ -239,6 +268,11 @@ export default function Chat() {
           [countKey]: (prev[countKey] || 0) + 1
         }));
         playNotificationSound();
+        if (Notification.permission === "granted") {
+          new Notification(`New DM from ${msg.sender}`, {
+            body: decryptText(msg.text) || "Sent a file"
+          });
+        }
         toast(`New direct message from ${msg.sender}: "${decryptText(msg.text) || "Sent a file"}"`, {
           icon: "👤",
           style: {
@@ -265,6 +299,11 @@ export default function Chat() {
           [countKey]: (prev[countKey] || 0) + 1
         }));
         playNotificationSound();
+        if (Notification.permission === "granted") {
+          new Notification(`New message in group channel`, {
+            body: `${msg.sender}: ${msg.text || "Sent a file"}`
+          });
+        }
         toast(`New group message in #${msg.groupId}: "${msg.text || "Sent a file"}"`, {
           icon: "📣",
           style: {
@@ -600,18 +639,36 @@ export default function Chat() {
     let messageType = "text";
 
     if (attachedFile) {
+      setIsUploading(true);
+      setUploadProgress(15);
+      const progressTimer = setInterval(() => {
+        setUploadProgress((prev) => (prev >= 90 ? 90 : prev + 15));
+      }, 100);
+
       try {
         const uploadRes = await axios.post(window.API_BASE_URL + "/chat/upload", {
           fileName: attachedFile.name,
           fileData: attachedFile.base64
         });
+        clearInterval(progressTimer);
+        setUploadProgress(100);
+        
         if (uploadRes.data.success) {
           fileUrl = uploadRes.data.fileUrl;
           fileName = uploadRes.data.fileName;
           messageType = "file";
         }
+        
+        setTimeout(() => {
+          setIsUploading(false);
+          setUploadProgress(0);
+        }, 200);
       } catch (err) {
+        clearInterval(progressTimer);
+        setIsUploading(false);
+        setUploadProgress(0);
         console.error("Upload failed", err);
+        toast.error("File upload failed");
         return;
       }
     }
@@ -656,6 +713,89 @@ export default function Chat() {
       }
     } catch (err) {
       console.error(err);
+      const failedMsg = {
+        _id: "failed_" + Date.now(),
+        sender,
+        receiver: isGroupChat ? "" : activeColleague.username,
+        groupId: isGroupChat ? activeColleague._id : null,
+        text: messageText,
+        messageType,
+        fileUrl,
+        fileName,
+        replyTo: replyingTo?._id || null,
+        disappearAfter,
+        createdAt: new Date().toISOString(),
+        status: "failed"
+      };
+      setFailedMessages((prev) => [...prev, failedMsg]);
+      toast.error("Message failed to send. Click retry.", { icon: "⚠️" });
+    }
+  };
+
+  const handleRetryMessage = async (failedMsg) => {
+    setFailedMessages((prev) => prev.filter((m) => m._id !== failedMsg._id));
+    const textToSend = failedMsg.groupId ? failedMsg.text : encryptText(failedMsg.text);
+    const payload = {
+      sender: failedMsg.sender,
+      receiver: failedMsg.receiver,
+      groupId: failedMsg.groupId,
+      text: textToSend,
+      messageType: failedMsg.messageType,
+      fileUrl: failedMsg.fileUrl,
+      fileName: failedMsg.fileName,
+      replyTo: failedMsg.replyTo,
+      disappearAfter: failedMsg.disappearAfter
+    };
+
+    try {
+      const endpoint = failedMsg.groupId ? window.API_BASE_URL + "/groupmessages" : window.API_BASE_URL + "/messages";
+      const res = await axios.post(endpoint, {
+        ...payload,
+        content: payload.text
+      });
+      if (res.data.success) {
+        const newMsg = res.data.message;
+        setMessages((prev) => [...prev, newMsg]);
+        if (failedMsg.groupId) {
+          socket.emit("group-message", newMsg);
+        } else {
+          socket.emit("private-message", newMsg);
+        }
+      }
+    } catch (err) {
+      console.error("Retry failed", err);
+      setFailedMessages((prev) => [...prev, failedMsg]);
+      toast.error("Retry failed");
+    }
+  };
+
+  const handleScroll = (e) => {
+    const element = e.target;
+    if (element.scrollTop === 0) {
+      if (messages.length > displayLimit) {
+        const prevHeight = element.scrollHeight;
+        setDisplayLimit((prev) => prev + 35);
+        setTimeout(() => {
+          element.scrollTop = element.scrollHeight - prevHeight;
+        }, 0);
+      }
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!window.confirm("Are you sure you want to leave this group?")) return;
+    try {
+      const res = await axios.put(`${window.API_BASE_URL}/chat/groups/${activeColleague._id}/leave`, {
+        username: sender
+      });
+      if (res.data.success) {
+        toast.success("Left group successfully");
+        setActiveColleague(null);
+        loadGroups();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to leave group");
     }
   };
 
@@ -837,22 +977,30 @@ export default function Chat() {
   };
 
   // Search message matching
-  const handleChatSearch = async (e) => {
-    const val = e.target.value;
-    setChatSearchQuery(val);
-    if (!val.trim()) {
+  // Search message matching
+  useEffect(() => {
+    if (!chatSearchQuery.trim()) {
       setSearchResults([]);
       return;
     }
-    try {
-      const endpoint = isGroupChat 
-        ? `${window.API_BASE_URL}/chat/${sender}/${activeColleague._id}/search?q=${val}`
-        : `${window.API_BASE_URL}/chat/${sender}/${activeColleague.username}/search?q=${val}`;
-      const res = await axios.get(endpoint);
-      setSearchResults(res.data);
-    } catch (err) {
-      console.error(err);
-    }
+    const delayDebounce = setTimeout(async () => {
+      if (!activeColleague) return;
+      try {
+        const endpoint = isGroupChat 
+          ? `${window.API_BASE_URL}/chat/${sender}/${activeColleague._id}/search?q=${chatSearchQuery}`
+          : `${window.API_BASE_URL}/chat/${sender}/${activeColleague.username}/search?q=${chatSearchQuery}`;
+        const res = await axios.get(endpoint);
+        setSearchResults(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [chatSearchQuery, activeColleague, isGroupChat, sender]);
+
+  const handleChatSearch = (e) => {
+    setChatSearchQuery(e.target.value);
   };
 
   // Date Separators Logic
@@ -873,7 +1021,8 @@ export default function Chat() {
     return groups;
   };
 
-  const groupedMessages = groupMessages(messages);
+  const displayedMessages = messages.slice(-displayLimit);
+  const groupedMessages = groupMessages(displayedMessages);
 
   const firstUnreadId = messages.find(
     (m) => m.sender !== sender && m.status !== "read"
@@ -899,7 +1048,7 @@ export default function Chat() {
       <div className="flex-1 flex overflow-hidden pt-14 md:pt-0 pb-16 md:pb-0">
         
         {/* Left Column: List sidebar */}
-        <div className="w-80 border-r border-slate-800 bg-slate-900/60 backdrop-blur-xl flex flex-col h-full shrink-0 hidden sm:flex">
+        <div className={`w-full sm:w-80 border-r border-slate-800 bg-slate-900/60 backdrop-blur-xl flex flex-col h-full shrink-0 ${activeColleague ? "hidden sm:flex" : "flex"}`}>
           <div className="p-4 border-b border-slate-800 space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-base font-extrabold text-slate-100">Enterprise Channels</h2>
@@ -1016,13 +1165,21 @@ export default function Chat() {
         </div>
 
         {/* Right Active pane */}
-        <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden relative">
+        <div className={`flex-1 flex flex-col h-full bg-slate-950 overflow-hidden relative ${activeColleague ? "flex" : "hidden sm:flex"}`}>
           <ErrorBoundary>
             {activeColleague ? (
             <>
               {/* Header */}
               <div className="h-16 border-b border-slate-800 bg-slate-900/40 backdrop-blur-md px-6 flex justify-between items-center shrink-0">
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setActiveColleague(null)}
+                    className="sm:hidden p-1.5 bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition mr-1 cursor-pointer flex items-center justify-center shrink-0"
+                    title="Back to list"
+                  >
+                    <IoArrowBack size={16} />
+                  </button>
+
                   <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-cyan-400 text-sm border border-slate-700/60 uppercase">
                     {isGroupChat ? "#" : (activeColleague.fullName ? activeColleague.fullName.substring(0, 2) : activeColleague.username.substring(0, 2))}
                   </div>
@@ -1070,6 +1227,16 @@ export default function Chat() {
                   )}
 
                   <button
+                    onClick={() => setStarredPanelOpen(!starredPanelOpen)}
+                    className={`p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition ${
+                      starredPanelOpen ? "bg-slate-850 text-yellow-400" : ""
+                    }`}
+                    title="View starred messages"
+                  >
+                    <IoStar size={18} />
+                  </button>
+
+                  <button
                     onClick={() => setChatSearchOpen(!chatSearchOpen)}
                     className={`p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition ${
                       chatSearchOpen ? "bg-slate-855 text-cyan-400" : ""
@@ -1078,6 +1245,15 @@ export default function Chat() {
                   >
                     <IoSearch size={18} />
                   </button>
+
+                  {isGroupChat && (
+                    <button
+                      onClick={handleLeaveGroup}
+                      className="bg-red-955/35 hover:bg-red-900/30 text-red-400 border border-red-900/30 text-xs px-3.5 py-1.5 rounded-lg font-bold transition cursor-pointer"
+                    >
+                      Leave Group
+                    </button>
+                  )}
 
                   {!isGroupChat && (
                     <button
@@ -1117,7 +1293,7 @@ export default function Chat() {
 
                 {/* Conversation Scroller */}
                 <div className="flex-1 flex flex-col justify-between overflow-hidden">
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-6" onScroll={handleScroll}>
                     
                     {loadingMessages ? (
                       <div className="space-y-4">
@@ -1209,6 +1385,16 @@ export default function Chat() {
                                         </button>
                                       )}
 
+                                      <button
+                                        onClick={() => handleToggleStar(msg._id)}
+                                        className={`p-1 hover:bg-slate-800 rounded ${
+                                          starredMessages.includes(msg._id) ? "text-yellow-400" : "text-slate-400 hover:text-white"
+                                        }`}
+                                        title={starredMessages.includes(msg._id) ? "Unstar message" : "Star message"}
+                                      >
+                                        <IoStarOutline size={13} />
+                                      </button>
+
                                       {isMe && !msg.deletedForEveryone && (
                                         <button
                                           onClick={() => {
@@ -1245,7 +1431,9 @@ export default function Chat() {
                                     <div className={`p-3.5 rounded-2xl text-xs relative border transition ${
                                       isMe 
                                         ? "bg-gradient-to-br from-cyan-600/30 to-cyan-700/10 border-cyan-800/40 text-slate-100 rounded-br-none" 
-                                        : "bg-slate-900 border-slate-800/80 text-slate-200 rounded-bl-none"
+                                        : (!isMe && isGroupChat && displayText && displayText.includes(`@${sender}`))
+                                          ? "bg-amber-955/20 border-amber-600/40 text-amber-200 rounded-bl-none shadow-sm shadow-amber-950/20"
+                                          : "bg-slate-900 border-slate-800/80 text-slate-200 rounded-bl-none"
                                     } ${msg.deletedForEveryone ? "italic text-slate-500 border-slate-900" : ""} ${
                                       isPinned ? "border-amber-600/40 shadow-sm shadow-amber-950/20" : ""
                                     }`}>
@@ -1439,12 +1627,67 @@ export default function Chat() {
                       </div>
                     )}
 
+                    {/* Failed Messages Retry Render */}
+                    {failedMessages
+                      .filter((fm) => 
+                        fm.groupId === (isGroupChat ? activeColleague?._id : null) && 
+                        (isGroupChat || fm.receiver === activeColleague?.username)
+                      )
+                      .map((fm) => (
+                        <div key={fm._id} className="flex gap-3 justify-end items-end animate-fade-in opacity-80 my-2">
+                          <div className="flex flex-col max-w-[65%] gap-1">
+                            <div className="p-3.5 rounded-2xl text-xs relative border border-red-900/40 bg-red-950/10 text-slate-300 rounded-br-none flex flex-col gap-2">
+                              <p className="italic text-red-200">{fm.text}</p>
+                              <div className="flex justify-between items-center text-[9px] text-red-400 font-bold gap-4">
+                                <span>⚠️ Failed to send</span>
+                                <button 
+                                  onClick={() => handleRetryMessage(fm)}
+                                  className="flex items-center gap-1 bg-red-900/30 hover:bg-red-900/50 px-2.5 py-1 rounded border border-red-800 transition uppercase tracking-wider cursor-pointer"
+                                >
+                                  <IoRefreshOutline size={10} />
+                                  <span>Retry</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
                     <div ref={bottomRef} />
                   </div>
 
                   {/* Input area */}
                   <div className="p-4 border-t border-slate-800 bg-slate-900/20 backdrop-blur-md">
                     
+                    {/* Mentions Autocomplete suggestions */}
+                    {isGroupChat && messageText.match(/@(\w*)$/) && (
+                      <div className="bg-slate-950 border border-slate-855 rounded-t-xl p-2 space-y-1 max-h-40 overflow-y-auto mb-1">
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-2 py-1">Mention Group Members</p>
+                        {(() => {
+                          const match = messageText.match(/@(\w*)$/);
+                          const query = match ? match[1].toLowerCase() : "";
+                          const suggestions = (groupMetadata?.members || []).filter(
+                            (username) => username !== sender && username.toLowerCase().includes(query)
+                          );
+                          if (suggestions.length === 0) {
+                            return <p className="text-[10px] text-slate-600 italic px-2">No matching members</p>;
+                          }
+                          return suggestions.map((username) => (
+                            <button
+                              key={username}
+                              onClick={() => {
+                                const newText = messageText.replace(/@(\w*)$/, `@${username} `);
+                                setMessageText(newText);
+                              }}
+                              className="w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-slate-850 text-slate-300 hover:text-white transition font-semibold"
+                            >
+                              @{username}
+                            </button>
+                          ));
+                        })()}
+                      </div>
+                    )}
+
                     {/* Reply banner */}
                     {replyingTo && (
                       <div className="flex justify-between items-center bg-slate-950 border border-slate-855 rounded-t-xl px-4 py-2 text-[10px] border-b-0 animate-slide-up">
@@ -1738,6 +1981,71 @@ export default function Chat() {
 
                         {(!groupMetadata?.pinnedMessages || groupMetadata.pinnedMessages.length === 0) && (
                           <p className="text-center text-slate-505 text-xs py-10">No messages pinned to this channel.</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Starred Messages Panel */}
+                <AnimatePresence>
+                  {starredPanelOpen && (
+                    <motion.div
+                      initial={{ x: 300, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      exit={{ x: 300, opacity: 0 }}
+                      className="w-80 border-l border-slate-800 bg-slate-900/60 backdrop-blur-xl h-full flex flex-col shrink-0 z-20"
+                    >
+                      <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+                        <h3 className="font-extrabold text-xs text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <IoStar size={12} />
+                          <span>Starred Messages</span>
+                        </h3>
+                        <button 
+                          onClick={() => setStarredPanelOpen(false)}
+                          className="p-1 hover:bg-slate-800 rounded text-slate-455 hover:text-white"
+                        >
+                          <IoClose size={18} />
+                        </button>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {messages.filter((m) => starredMessages.includes(m._id)).map((starMsg) => {
+                          const displayStarText = starMsg.groupId ? starMsg.text : decryptText(starMsg.text);
+                          return (
+                            <div 
+                              key={starMsg._id}
+                              onClick={() => {
+                                const idx = messages.findIndex((m) => m._id === starMsg._id);
+                                if (idx !== -1) {
+                                  const els = document.getElementsByClassName("group relative");
+                                  els[idx]?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                }
+                              }}
+                              className="bg-slate-955 border border-slate-855 hover:border-yellow-500/20 p-3 rounded-xl cursor-pointer transition text-left relative group/star"
+                            >
+                              <div className="flex justify-between items-center mb-1 text-[9px]">
+                                <span className="font-bold text-slate-200">{starMsg.sender}</span>
+                                <span className="text-slate-505">{formatTime(starMsg.createdAt)}</span>
+                              </div>
+                              <p className="text-xs text-slate-350 line-clamp-3">{displayStarText}</p>
+                              
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleStar(starMsg._id);
+                                }}
+                                className="absolute top-2 right-2 opacity-0 group-hover/star:opacity-100 p-1 hover:bg-slate-800 text-slate-500 hover:text-red-400 rounded transition"
+                                title="Unstar message"
+                              >
+                                <IoClose size={12} />
+                              </button>
+                            </div>
+                          );
+                        })}
+
+                        {messages.filter((m) => starredMessages.includes(m._id)).length === 0 && (
+                          <p className="text-center text-slate-505 text-xs py-10">No starred messages in this thread.</p>
                         )}
                       </div>
                     </motion.div>

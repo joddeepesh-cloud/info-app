@@ -1,3 +1,4 @@
-- `[x]` Set window.API_BASE_URL synchronously in index.html head
-- `[x]` Refactor userService.js to evaluate API path dynamically
-- `[x]` Verify production builds and confirm zero undefined/ requests are possible
+- `[x]` Implement dynamic HTML5 browser notifications toggles
+- `[x]` Add accent color palette options under personal preferences (Settings.jsx)
+- `[x]` Inject dynamic accent CSS color variables on-the-fly (ThemeContext.jsx)
+- `[x]` Verify complete compilation safety

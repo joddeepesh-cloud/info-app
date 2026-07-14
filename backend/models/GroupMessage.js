@@ -65,6 +65,7 @@ const groupMessageSchema = new mongoose.Schema(
   }
 );
 
+groupMessageSchema.index({ groupId: 1, createdAt: 1 });
 groupMessageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model("GroupMessage", groupMessageSchema);

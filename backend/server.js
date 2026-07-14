@@ -10,6 +10,36 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Lightweight rate limiter middleware to protect authentication endpoints from brute force attempts
+const rateLimiter = (options = {}) => {
+  const requests = new Map();
+  const windowMs = options.windowMs || 60 * 1000;
+  const max = options.max || 25;
+
+  return (req, res, next) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const now = Date.now();
+
+    if (!requests.has(ip)) {
+      requests.set(ip, []);
+    }
+
+    const timestamps = requests.get(ip).filter((time) => now - time < windowMs);
+    timestamps.push(now);
+    requests.set(ip, timestamps);
+
+    if (timestamps.length > max) {
+      return res.status(429).json({
+        success: false,
+        message: "Too many requests. Please try again in a minute."
+      });
+    }
+    next();
+  };
+};
+
+const authLimiter = rateLimiter({ max: 20, windowMs: 60 * 1000 });
+
 const chatRoutes = require("./routes/chatRoutes");
 const userRoutes = require("./routes/userRoutes");
 
@@ -203,7 +233,7 @@ app.get("/", (req, res) => {
 });
 
 // Register
-app.post("/register", async (req, res) => {
+app.post("/register", authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -256,7 +286,7 @@ app.post("/register", async (req, res) => {
 });
 
 // Login
-app.post("/login", async (req, res) => {
+app.post("/login", authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 

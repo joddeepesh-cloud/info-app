@@ -241,7 +241,8 @@ const createGroup = async (req, res) => {
       name,
       description,
       members: members || [],
-      createdBy
+      createdBy,
+      admins: [createdBy]
     });
 
     const io = require("../socket/socket").getIO();
@@ -259,12 +260,12 @@ const createGroup = async (req, res) => {
 const editGroup = async (req, res) => {
   try {
     const { groupId } = req.params;
-    const { name, description, members } = req.body;
+    const { name, description, members, admins } = req.body;
     const Group = require("../models/Group");
 
     const group = await Group.findByIdAndUpdate(
       groupId,
-      { name, description, members },
+      { name, description, members, admins },
       { new: true }
     );
 
@@ -595,7 +596,37 @@ const getWorkspaceActivity = async (req, res) => {
   }
 };
 
+const leaveGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { username } = req.body;
+    const Group = require("../models/Group");
+
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    group.members = group.members.filter((m) => m !== username);
+    if (group.admins) {
+      group.admins = group.admins.filter((a) => a !== username);
+    }
+    await group.save();
+
+    const io = require("../socket/socket").getIO();
+    if (io) {
+      io.emit("group-updated", group);
+    }
+
+    res.json({ success: true, group });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to leave group" });
+  }
+};
+
 module.exports = {
+  leaveGroup,
   sendMessage,
   getMessages,
   deleteForMe,

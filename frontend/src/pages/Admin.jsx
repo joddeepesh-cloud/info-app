@@ -54,6 +54,34 @@ export default function Admin() {
   const [resettingEmp, setResettingEmp] = useState(null); // User object
   const [newPassword, setNewPassword] = useState("");
 
+  // Filters & Search states
+  const [empSearchQuery, setEmpSearchQuery] = useState("");
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState("All");
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState("All");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("All");
+  const [currentEmpPage, setCurrentEmpPage] = useState(1);
+  const itemsPerPage = 8;
+
+  const filteredEmployees = employees.filter((emp) => {
+    const matchesSearch = 
+      emp.username.toLowerCase().includes(empSearchQuery.toLowerCase()) ||
+      (emp.fullName && emp.fullName.toLowerCase().includes(empSearchQuery.toLowerCase())) ||
+      (emp.designation && emp.designation.toLowerCase().includes(empSearchQuery.toLowerCase()));
+
+    const matchesDept = selectedDeptFilter === "All" || emp.department === selectedDeptFilter;
+    const matchesRole = selectedRoleFilter === "All" || emp.role === selectedRoleFilter;
+    const matchesStatus = 
+      selectedStatusFilter === "All" || 
+      (selectedStatusFilter === "Suspended" && emp.isSuspended) ||
+      (selectedStatusFilter === "Active" && !emp.isSuspended);
+
+    return matchesSearch && matchesDept && matchesRole && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const startIndex = (currentEmpPage - 1) * itemsPerPage;
+  const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + itemsPerPage);
+
   // Group Form State
   const [groupName, setGroupName] = useState("");
   const [groupDesc, setGroupDesc] = useState("");
@@ -653,7 +681,47 @@ export default function Admin() {
               {/* Employee table */}
               <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                 <div className="p-4 border-b border-slate-850 font-bold text-xs text-slate-400">
-                  Colleague Registry ({employees.length})
+                  Colleague Registry ({filteredEmployees.length})
+                </div>
+                {/* Search & Filters Row */}
+                <div className="p-4 border-b border-slate-850 grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-950/20">
+                  <input
+                    type="text"
+                    placeholder="Search by name, username..."
+                    value={empSearchQuery}
+                    onChange={(e) => { setEmpSearchQuery(e.target.value); setCurrentEmpPage(1); }}
+                    className="bg-slate-955 border border-slate-855 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/50"
+                  />
+                  <select
+                    value={selectedDeptFilter}
+                    onChange={(e) => { setSelectedDeptFilter(e.target.value); setCurrentEmpPage(1); }}
+                    className="bg-slate-955 border border-slate-855 rounded-xl px-3 py-2 text-xs text-slate-400 focus:outline-none focus:border-cyan-500/50 cursor-pointer"
+                  >
+                    <option value="All">All Departments</option>
+                    <option>Development</option>
+                    <option>HR</option>
+                    <option>Marketing</option>
+                    <option>Finance</option>
+                  </select>
+                  <select
+                    value={selectedRoleFilter}
+                    onChange={(e) => { setSelectedRoleFilter(e.target.value); setCurrentEmpPage(1); }}
+                    className="bg-slate-955 border border-slate-855 rounded-xl px-3 py-2 text-xs text-slate-400 focus:outline-none focus:border-cyan-500/50 cursor-pointer"
+                  >
+                    <option value="All">All Roles</option>
+                    <option value="employee">Employee</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <select
+                    value={selectedStatusFilter}
+                    onChange={(e) => { setSelectedStatusFilter(e.target.value); setCurrentEmpPage(1); }}
+                    className="bg-slate-955 border border-slate-855 rounded-xl px-3 py-2 text-xs text-slate-400 focus:outline-none focus:border-cyan-500/50 cursor-pointer"
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Active">Active Only</option>
+                    <option value="Suspended">Suspended Only</option>
+                  </select>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs">
@@ -667,7 +735,7 @@ export default function Admin() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850/60">
-                      {employees.map((emp) => (
+                      {paginatedEmployees.map((emp) => (
                         <tr 
                           key={emp._id} 
                           className={`hover:bg-slate-950/20 text-slate-200 transition ${
@@ -741,6 +809,35 @@ export default function Admin() {
                     </tbody>
                   </table>
                 </div>
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="p-4 border-t border-slate-850 flex justify-between items-center text-xs text-slate-500 bg-slate-950/10 select-none">
+                    <span>
+                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of {filteredEmployees.length} colleagues
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentEmpPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentEmpPage === 1}
+                        className="px-3 py-1.5 bg-slate-955 border border-slate-855 rounded-lg hover:border-slate-700 disabled:opacity-40 transition font-bold cursor-pointer"
+                      >
+                        Prev
+                      </button>
+                      <span className="px-3 py-1.5 text-slate-300 font-bold bg-slate-955 border border-slate-855 rounded-lg">
+                        Page {currentEmpPage} of {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentEmpPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={currentEmpPage === totalPages}
+                        className="px-3 py-1.5 bg-slate-955 border border-slate-855 rounded-lg hover:border-slate-700 disabled:opacity-40 transition font-bold cursor-pointer"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>

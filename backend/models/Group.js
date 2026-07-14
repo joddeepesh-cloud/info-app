@@ -23,6 +23,10 @@ const GroupSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    admins: {
+      type: [String],
+      default: [],
+    },
     pinnedMessages: [
       {
         type: mongoose.Schema.Types.ObjectId,
