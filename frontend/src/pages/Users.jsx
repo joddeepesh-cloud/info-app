@@ -61,12 +61,12 @@ export default function Users() {
     });
 
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden text-slate-100">
+    <div className="flex h-[100dvh] bg-slate-950 overflow-hidden text-slate-100">
       {/* Global Sidebar Shell */}
       <Sidebar />
 
       {/* Main Workspace Frame */}
-      <div className="flex-1 flex flex-col h-full p-6 overflow-hidden">
+      <div className="flex-1 flex flex-col h-full p-6 overflow-hidden pt-14 lg:pt-6 pb-16 lg:pb-6">
         {/* Top Navbar */}
         <Navbar />
 

@@ -1,5 +1,3 @@
-- `[x]` Trace root cause of the "Invalid Date" bug
-- `[x]` Fix date validations inside EmployeeCard.jsx
-- `[x]` Fix date validations inside ProfileDrawer.jsx
-- `[x]` Update TimeContext formatting overrides to support strict checks
+- `[x]` Update viewport container wrappers to use dynamic viewport height h-[100dvh] (Chat, Dashboard, Admin, Settings, Users)
+- `[x]` Realign layout padding offsets on Users and Settings pages
 - `[x]` Verify complete compilation safety

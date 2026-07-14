@@ -460,7 +460,7 @@ export default function Admin() {
   // Access check
   if (!isAdmin) {
     return (
-      <div className="flex h-screen bg-slate-950 overflow-hidden text-slate-100">
+      <div className="flex h-[100dvh] bg-slate-950 overflow-hidden text-slate-100">
         <Sidebar />
         <div className="flex-1 flex flex-col h-full p-6">
           <Navbar />
@@ -485,7 +485,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden text-slate-100">
+    <div className="flex h-[100dvh] bg-slate-950 overflow-hidden text-slate-100">
       <Sidebar />
 
       {/* Main content block */}

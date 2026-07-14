@@ -247,6 +247,7 @@ export default function Chat() {
 
     // Socket listeners with strict unbinds on dependency change
     socket.on("private-message", (msg) => {
+      console.log("DEBUG: Socket.IO private-message received:", msg);
       const isForActivePrivate = !isGroupChat && (
         (msg.sender === activeColleague?.username && msg.receiver === sender) ||
         (msg.sender === sender && msg.receiver === activeColleague?.username)
@@ -285,6 +286,7 @@ export default function Chat() {
     });
 
     socket.on("group-message", (msg) => {
+      console.log("DEBUG: Socket.IO group-message received:", msg);
       const isForActiveGroup = isGroupChat && msg.groupId === activeColleague?._id;
 
       if (isForActiveGroup) {
@@ -522,6 +524,7 @@ export default function Chat() {
         const res = await axios.get(
           `${window.API_BASE_URL}/groupmessages?groupId=${target._id}`
         );
+        console.log("DEBUG: Load group messages API response:", res.data);
         setMessages(res.data);
         await loadGroupMetadata(target._id);
         
@@ -533,6 +536,7 @@ export default function Chat() {
         const res = await axios.get(
           `${window.API_BASE_URL}/messages?sender=${sender}&receiver=${target.username}`
         );
+        console.log("DEBUG: Load private DMs API response:", res.data);
         const visible = res.data.filter((m) => !m.deletedForMe?.includes(sender));
         setMessages(visible);
         await markChatRead(target.username);
@@ -1011,9 +1015,11 @@ export default function Chat() {
 
   // Date Separators Logic
   const groupMessages = (msgList) => {
+    console.log("DEBUG: groupMessages input list:", msgList);
     const groups = {};
     msgList.forEach((msg) => {
       const dateStr = formatDate(msg.createdAt);
+      console.log("DEBUG: msg._id:", msg._id, "msg.createdAt:", msg.createdAt, "formatDate result:", dateStr);
       const todayStr = formatDate(getWorkspaceTime());
       const yesterdayStr = formatDate(new Date(getWorkspaceTime().getTime() - 86400000));
 
@@ -1024,6 +1030,7 @@ export default function Chat() {
       if (!groups[header]) groups[header] = [];
       groups[header].push(msg);
     });
+    console.log("DEBUG: groupMessages resulting groups map keys:", Object.keys(groups));
     return groups;
   };
 
@@ -1044,7 +1051,7 @@ export default function Chat() {
     .map((m) => m.fileUrl);
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden font-sans">
       <Toaster position="top-right" />
       
       {/* 1. Sidebar */}
@@ -1312,8 +1319,10 @@ export default function Chat() {
                         <p className="text-xs font-semibold">Secure conversation portal.</p>
                       </div>
                     ) : (
-                      Object.keys(groupedMessages).map((dateHeader) => (
-                        <div key={dateHeader} className="space-y-4">
+                      Object.keys(groupedMessages).map((dateHeader) => {
+                        console.log("DEBUG: Rendering date header:", dateHeader, "messages count:", groupedMessages[dateHeader].length);
+                        return (
+                          <div key={dateHeader} className="space-y-4">
                           
                           {/* Date Separator */}
                           <div className="flex items-center gap-4 my-4">
@@ -1609,7 +1618,8 @@ export default function Chat() {
                             );
                           })}
                         </div>
-                      ))
+                        );
+                      })
                     )}
 
                     {/* Private Typing dots */}

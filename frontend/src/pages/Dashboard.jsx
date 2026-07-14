@@ -194,7 +194,7 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden text-slate-100 font-sans">
+    <div className="flex h-[100dvh] bg-slate-950 overflow-hidden text-slate-100 font-sans">
       <Toaster position="top-right" />
       
       {/* Sidebar */}
