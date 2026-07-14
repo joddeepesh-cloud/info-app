@@ -235,7 +235,17 @@ export default function Chat() {
     };
     window.addEventListener("keydown", handleGlobalShortcuts);
     return () => window.removeEventListener("keydown", handleGlobalShortcuts);
-  }, []);
+  }, []);  // Refs to avoid stale closures in socket events
+  const activeColleagueRef = useRef(activeColleague);
+  const isGroupChatRef = useRef(isGroupChat);
+
+  useEffect(() => {
+    activeColleagueRef.current = activeColleague;
+  }, [activeColleague]);
+
+  useEffect(() => {
+    isGroupChatRef.current = isGroupChat;
+  }, [isGroupChat]);
 
   // Load colleagues, groups, and presence
   useEffect(() => {
@@ -248,7 +258,9 @@ export default function Chat() {
     // Socket listeners with strict unbinds on dependency change
     socket.on("private-message", (msg) => {
       console.log("DEBUG: Socket.IO private-message received:", msg);
-      const isForActivePrivate = !isGroupChat && (
+      const activeColleague = activeColleagueRef.current;
+      const isGroup = isGroupChatRef.current;
+      const isForActivePrivate = !isGroup && (
         (msg.sender === activeColleague?.username && msg.receiver === sender) ||
         (msg.sender === sender && msg.receiver === activeColleague?.username)
       );
@@ -287,7 +299,9 @@ export default function Chat() {
 
     socket.on("group-message", (msg) => {
       console.log("DEBUG: Socket.IO group-message received:", msg);
-      const isForActiveGroup = isGroupChat && msg.groupId === activeColleague?._id;
+      const activeColleague = activeColleagueRef.current;
+      const isGroup = isGroupChatRef.current;
+      const isForActiveGroup = isGroup && msg.groupId === activeColleague?._id;
 
       if (isForActiveGroup) {
         setMessages((prev) => {
@@ -318,25 +332,31 @@ export default function Chat() {
     });
 
     socket.on("user-typing", (data) => {
-      if (isGroupChat && data.groupId === activeColleague?._id) {
-        if (data.sender !== sender && !typingUsers.includes(data.sender)) {
-          setTypingUsers((prev) => [...prev, data.sender]);
+      const activeColleague = activeColleagueRef.current;
+      const isGroup = isGroupChatRef.current;
+      if (isGroup && data.groupId === activeColleague?._id) {
+        if (data.sender !== sender) {
+          setTypingUsers((prev) => prev.includes(data.sender) ? prev : [...prev, data.sender]);
         }
-      } else if (!isGroupChat && data.sender === activeColleague?.username) {
+      } else if (!isGroup && data.sender === activeColleague?.username) {
         setColleagueTyping(true);
       }
     });
 
     socket.on("user-stop-typing", (data) => {
-      if (isGroupChat && data.groupId === activeColleague?._id) {
+      const activeColleague = activeColleagueRef.current;
+      const isGroup = isGroupChatRef.current;
+      if (isGroup && data.groupId === activeColleague?._id) {
         setTypingUsers((prev) => prev.filter((u) => u !== data.sender));
-      } else if (!isGroupChat && data.sender === activeColleague?.username) {
+      } else if (!isGroup && data.sender === activeColleague?.username) {
         setColleagueTyping(false);
       }
     });
 
     socket.on("message-read", (data) => {
-      if (!isGroupChat && data.receiver === activeColleague?.username) {
+      const activeColleague = activeColleagueRef.current;
+      const isGroup = isGroupChatRef.current;
+      if (!isGroup && data.receiver === activeColleague?.username) {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.sender === sender ? { ...msg, status: "read" } : msg
@@ -346,7 +366,9 @@ export default function Chat() {
     });
 
     socket.on("message-delivered", (data) => {
-      if (!isGroupChat && data.receiver === activeColleague?.username) {
+      const activeColleague = activeColleagueRef.current;
+      const isGroup = isGroupChatRef.current;
+      if (!isGroup && data.receiver === activeColleague?.username) {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.sender === sender && msg.status === "sent"
@@ -399,7 +421,9 @@ export default function Chat() {
     });
 
     socket.on("group-pin-updated", (data) => {
-      if (isGroupChat && activeColleague?._id === data.groupId) {
+      const activeColleague = activeColleagueRef.current;
+      const isGroup = isGroupChatRef.current;
+      if (isGroup && activeColleague?._id === data.groupId) {
         loadGroupMetadata(data.groupId);
       }
     });
@@ -410,7 +434,9 @@ export default function Chat() {
           u.username === data.username ? { ...u, status: data.status } : u
         )
       );
-      if (!isGroupChat && activeColleague && activeColleague.username === data.username) {
+      const activeColleague = activeColleagueRef.current;
+      const isGroup = isGroupChatRef.current;
+      if (!isGroup && activeColleague && activeColleague.username === data.username) {
         setActiveColleague((prev) => ({ ...prev, status: data.status }));
       }
     });
@@ -427,6 +453,7 @@ export default function Chat() {
     });
 
     socket.on("group-updated", (group) => {
+      const activeColleague = activeColleagueRef.current;
       if (group.members.includes(sender) || group.createdBy === sender) {
         setGroups((prev) =>
           prev.map((g) => (g._id === group._id ? group : g))
@@ -444,6 +471,7 @@ export default function Chat() {
     });
 
     socket.on("group-deleted", ({ groupId }) => {
+      const activeColleague = activeColleagueRef.current;
       setGroups((prev) => prev.filter((g) => g._id !== groupId));
       if (activeColleague?._id === groupId) {
         setActiveColleague(null);
@@ -467,7 +495,7 @@ export default function Chat() {
       socket.off("group-updated");
       socket.off("group-deleted");
     };
-  }, [activeColleague]);
+  }, []);
 
   // Load conversation when active target changes
   useEffect(() => {
@@ -744,7 +772,8 @@ export default function Chat() {
 
   const handleRetryMessage = async (failedMsg) => {
     setFailedMessages((prev) => prev.filter((m) => m._id !== failedMsg._id));
-    const textToSend = failedMsg.groupId ? failedMsg.text : encryptText(failedMsg.text);
+    const failedText = failedMsg.text || failedMsg.content || "";
+    const textToSend = failedMsg.groupId ? failedText : encryptText(failedText);
     const payload = {
       sender: failedMsg.sender,
       receiver: failedMsg.receiver,
@@ -943,7 +972,8 @@ export default function Chat() {
     const isOriginalGroup = !!forwardingMsg.groupId;
     
     // Decrypt if originally private
-    const rawText = isOriginalGroup ? forwardingMsg.text : decryptText(forwardingMsg.text);
+    const fwdText = forwardingMsg.text || forwardingMsg.content || "";
+    const rawText = isOriginalGroup ? fwdText : decryptText(fwdText);
     
     // Encrypt if forward target is private
     const textToSend = isTargetGroup ? rawText : encryptText(rawText);
@@ -1058,7 +1088,7 @@ export default function Chat() {
       <Sidebar />
 
       {/* 2. Chat console layout */}
-      <div className="flex-1 flex overflow-hidden pt-14 lg:pt-0 pb-16 lg:pb-0">
+      <div className="flex-1 flex overflow-hidden h-full pt-14 lg:pt-0 pb-16 lg:pb-0">
         
         {/* Left Column: List sidebar */}
         <div className={`w-full sm:w-80 border-r border-slate-800 bg-slate-900/60 backdrop-blur-xl flex flex-col h-full shrink-0 ${activeColleague ? "hidden sm:flex" : "flex"}`}>
@@ -1336,13 +1366,14 @@ export default function Chat() {
                           {groupedMessages[dateHeader].map((msg) => {
                             const isMe = msg.sender === sender;
                             const hasReply = msg.replyTo;
-                            const isFile = msg.messageType === "file";
+                            const msgText = msg.text || msg.content || "";
+                            const isFile = msg.messageType === "file" || (!msgText && msg.fileUrl);
                             const isMsgUnreadLine = msg._id === firstUnreadId;
                             const isPinned = groupMetadata?.pinnedMessages?.includes(msg._id);
 
                             // Decrypt text client-side if it is a private message (not group message)
-                            const displayText = msg.groupId ? msg.text : decryptText(msg.text);
-                            const isEncrypted = !msg.groupId && msg.text?.startsWith("[E2EE-SECURE] ");
+                            const displayText = msg.groupId ? msgText : decryptText(msgText);
+                            const isEncrypted = !msg.groupId && msgText?.startsWith("[E2EE-SECURE] ");
 
                             return (
                               <div key={msg._id} className="space-y-2 animate-fade-in">
@@ -1468,7 +1499,7 @@ export default function Chat() {
                                           <p className="truncate mt-0.5">{
                                             msg.replyTo.deletedForEveryone 
                                               ? "This message was deleted" 
-                                              : (msg.replyTo.groupId ? msg.replyTo.text : decryptText(msg.replyTo.text))
+                                              : (msg.replyTo.groupId ? (msg.replyTo.text || msg.replyTo.content) : decryptText(msg.replyTo.text || msg.replyTo.content))
                                           }</p>
                                         </div>
                                       )}
@@ -1710,7 +1741,7 @@ export default function Chat() {
                         <div>
                           <span className="font-bold text-cyan-400">Replying to {replyingTo.sender}</span>
                           <span className="text-slate-400 block truncate max-w-lg mt-0.5">
-                            {replyingTo.groupId ? replyingTo.text : decryptText(replyingTo.text)}
+                            {replyingTo.groupId ? (replyingTo.text || replyingTo.content) : decryptText(replyingTo.text || replyingTo.content)}
                           </span>
                         </div>
                         <button onClick={() => setReplyingTo(null)} className="text-slate-550 hover:text-white">
@@ -1911,7 +1942,7 @@ export default function Chat() {
 
                       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
                         {searchResults.map((res) => {
-                          const displayResText = res.groupId ? res.text : decryptText(res.text);
+                          const displayResText = res.groupId ? (res.text || res.content) : decryptText(res.text || res.content);
                           return (
                             <div
                               key={res._id}
@@ -2027,7 +2058,7 @@ export default function Chat() {
 
                       <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {messages.filter((m) => starredMessages.includes(m._id)).map((starMsg) => {
-                          const displayStarText = starMsg.groupId ? starMsg.text : decryptText(starMsg.text);
+                          const displayStarText = starMsg.groupId ? (starMsg.text || starMsg.content) : decryptText(starMsg.text || starMsg.content);
                           return (
                             <div 
                               key={starMsg._id}

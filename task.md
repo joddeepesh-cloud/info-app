@@ -1,3 +1,5 @@
-- `[x]` Update viewport container wrappers to use dynamic viewport height h-[100dvh] (Chat, Dashboard, Admin, Settings, Users)
-- `[x]` Realign layout padding offsets on Users and Settings pages
+- `[x]` Refactor Socket.IO listener callbacks using React Refs to avoid stale closures (Chat.jsx)
+- `[x]` Change Socket.IO listener register hook to bind once on mount (Chat.jsx)
+- `[x]` Correct stats card grids column configurations to support small phone viewports (Dashboard.jsx)
+- `[x]` Bounded height constraint to h-full on parent frames (Chat.jsx)
 - `[x]` Verify complete compilation safety

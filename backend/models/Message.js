@@ -19,6 +19,23 @@ const messageSchema = new mongoose.Schema(
       type: String,
       default: "", // maps to text content of the message
     },
+    text: {
+      type: String,
+      default: "", // duplicate of content, used by frontend for display
+    },
+    messageType: {
+      type: String,
+      enum: ["text", "file"],
+      default: "text",
+    },
+    fileUrl: {
+      type: String,
+      default: "",
+    },
+    fileName: {
+      type: String,
+      default: "",
+    },
     attachments: [
       {
         fileUrl: { type: String, default: "" },
