@@ -1,5 +1,3 @@
-- `[x]` Create environment variable configuration (.env)
-- `[x]` Implement global dynamic window.API_BASE_URL (main.jsx)
-- `[x]` Refactor all axios and fetch request target URLs to use window.API_BASE_URL
-- `[x]` Update Socket.IO initialization parameters in useSocket.js
-- `[x]` Verify production builds and log file walkthroughs
+- `[x]` Set window.API_BASE_URL synchronously in index.html head
+- `[x]` Refactor userService.js to evaluate API path dynamically
+- `[x]` Verify production builds and confirm zero undefined/ requests are possible
