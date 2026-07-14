@@ -674,6 +674,33 @@ export default function Chat() {
     }
 
     const textToSend = isGroupChat ? messageText : encryptText(messageText);
+    const tempId = "temp_" + Date.now();
+
+    const optimisticMsg = {
+      _id: tempId,
+      sender,
+      receiver: isGroupChat ? "" : activeColleague.username,
+      groupId: isGroupChat ? activeColleague._id : null,
+      text: textToSend,
+      messageType,
+      fileUrl,
+      fileName,
+      replyTo: replyingTo || null,
+      disappearAfter,
+      status: "sending",
+      createdAt: new Date().toISOString()
+    };
+
+    // Optimistically update list & clear fields immediately!
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setMessageText("");
+    setReplyingTo(null);
+    setAttachedFile(null);
+    
+    socket.emit("stop-typing", isGroupChat 
+      ? { sender, groupId: activeColleague._id } 
+      : { sender, receiver: activeColleague.username }
+    );
 
     const payload = {
       sender,
@@ -695,40 +722,19 @@ export default function Chat() {
       });
       if (res.data.success) {
         const newMsg = res.data.message;
-        setMessages((prev) => [...prev, newMsg]);
+        setMessages((prev) => prev.map((m) => m._id === tempId ? newMsg : m));
         
         if (isGroupChat) {
           socket.emit("group-message", newMsg);
         } else {
           socket.emit("private-message", newMsg);
         }
-        
-        setMessageText("");
-        setReplyingTo(null);
-        setAttachedFile(null);
-        socket.emit("stop-typing", isGroupChat 
-          ? { sender, groupId: activeColleague._id } 
-          : { sender, receiver: activeColleague.username }
-        );
       }
     } catch (err) {
       console.error(err);
-      const failedMsg = {
-        _id: "failed_" + Date.now(),
-        sender,
-        receiver: isGroupChat ? "" : activeColleague.username,
-        groupId: isGroupChat ? activeColleague._id : null,
-        text: messageText,
-        messageType,
-        fileUrl,
-        fileName,
-        replyTo: replyingTo?._id || null,
-        disappearAfter,
-        createdAt: new Date().toISOString(),
-        status: "failed"
-      };
-      setFailedMessages((prev) => [...prev, failedMsg]);
-      toast.error("Message failed to send. Click retry.", { icon: "⚠️" });
+      // Mark as failed in messages list
+      setMessages((prev) => prev.map((m) => m._id === tempId ? { ...m, status: "failed", _id: "failed_" + Date.now() } : m));
+      toast.error("Message failed to send", { icon: "⚠️" });
     }
   };
 

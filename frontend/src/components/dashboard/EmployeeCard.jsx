@@ -13,8 +13,9 @@ export default function EmployeeCard({ user, onClick }) {
     }
   };
 
-  const formattedLastSeen = user.lastSeen 
-    ? new Date(user.lastSeen).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  const lastSeenDate = user.lastSeen ? new Date(user.lastSeen) : null;
+  const formattedLastSeen = (lastSeenDate && !isNaN(lastSeenDate.getTime()))
+    ? lastSeenDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : "Recently active";
 
   return (

@@ -25,8 +25,9 @@ export default function ProfileDrawer({ user, open, onClose, onMessage }) {
     }
   };
 
-  const formattedLastSeen = user.lastSeen 
-    ? new Date(user.lastSeen).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
+  const lastSeenDate = user.lastSeen ? new Date(user.lastSeen) : null;
+  const formattedLastSeen = (lastSeenDate && !isNaN(lastSeenDate.getTime()))
+    ? lastSeenDate.toLocaleString([], { dateStyle: "short", timeStyle: "short" })
     : "Recently active";
 
   return (

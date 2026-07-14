@@ -47,7 +47,10 @@ export function TimeProvider({ children }) {
   // Convert any UTC database timestamp into active display time
   const adjustTimestamp = (dateInput) => {
     if (!dateInput) return new Date();
-    const d = new Date(dateInput);
+    let d = new Date(dateInput);
+    if (isNaN(d.getTime())) {
+      return null;
+    }
     if (settings.automaticTime) return d;
     
     // In manual mode, we offset the timestamp so it aligns with simulated workspace hours
@@ -56,8 +59,14 @@ export function TimeProvider({ children }) {
 
   // Format time (e.g. 10:24 AM)
   const formatTime = (dateInput) => {
-    if (!dateInput) return "";
+    if (!dateInput) {
+      const adjusted = adjustTimestamp(new Date());
+      return adjusted.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
     const adjusted = adjustTimestamp(dateInput);
+    if (!adjusted || isNaN(adjusted.getTime())) {
+      return "";
+    }
     try {
       return adjusted.toLocaleTimeString([], {
         hour: "2-digit",
@@ -71,8 +80,14 @@ export function TimeProvider({ children }) {
 
   // Format Date (e.g. October 10, 2026)
   const formatDate = (dateInput) => {
-    if (!dateInput) return "";
+    if (!dateInput) {
+      const adjusted = adjustTimestamp(new Date());
+      return adjusted.toLocaleDateString([], { year: "numeric", month: "long", day: "numeric" });
+    }
     const adjusted = adjustTimestamp(dateInput);
+    if (!adjusted || isNaN(adjusted.getTime())) {
+      return "";
+    }
     try {
       return adjusted.toLocaleDateString([], {
         year: "numeric",

@@ -1,3 +1,5 @@
-- `[x]` Update Sidebar and mobile bottom navigation to hide/alternate at the 1024px (lg) breakpoint
-- `[x]` Adapt top and bottom padding offsets on Dashboard, Admin, and Chat views
+- `[x]` Trace root cause of the "Invalid Date" bug
+- `[x]` Fix date validations inside EmployeeCard.jsx
+- `[x]` Fix date validations inside ProfileDrawer.jsx
+- `[x]` Update TimeContext formatting overrides to support strict checks
 - `[x]` Verify complete compilation safety
