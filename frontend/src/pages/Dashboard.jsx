@@ -201,7 +201,7 @@ export default function Dashboard() {
       <Sidebar />
 
       {/* Main content frame */}
-      <div className="flex-1 flex flex-col h-full p-6 overflow-hidden pt-14 md:pt-6 pb-16 md:pb-6">
+      <div className="flex-1 flex flex-col h-full p-6 overflow-hidden pt-14 lg:pt-6 pb-16 lg:pb-6">
         
         {/* Top Navbar */}
         <Navbar />
@@ -210,7 +210,7 @@ export default function Dashboard() {
         <div className="flex-1 overflow-y-auto space-y-6 pr-2">
           
           {/* Welcome status header bar */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800/80 p-6 rounded-2xl">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800/80 p-6 rounded-2xl">
             <div>
               <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400">
                 Workspace Monitor

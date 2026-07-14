@@ -1045,7 +1045,7 @@ export default function Chat() {
       <Sidebar />
 
       {/* 2. Chat console layout */}
-      <div className="flex-1 flex overflow-hidden pt-14 md:pt-0 pb-16 md:pb-0">
+      <div className="flex-1 flex overflow-hidden pt-14 lg:pt-0 pb-16 lg:pb-0">
         
         {/* Left Column: List sidebar */}
         <div className={`w-full sm:w-80 border-r border-slate-800 bg-slate-900/60 backdrop-blur-xl flex flex-col h-full shrink-0 ${activeColleague ? "hidden sm:flex" : "flex"}`}>

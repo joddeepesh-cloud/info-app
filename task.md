@@ -1,4 +1,3 @@
-- `[x]` Implement dynamic HTML5 browser notifications toggles
-- `[x]` Add accent color palette options under personal preferences (Settings.jsx)
-- `[x]` Inject dynamic accent CSS color variables on-the-fly (ThemeContext.jsx)
+- `[x]` Update Sidebar and mobile bottom navigation to hide/alternate at the 1024px (lg) breakpoint
+- `[x]` Adapt top and bottom padding offsets on Dashboard, Admin, and Chat views
 - `[x]` Verify complete compilation safety

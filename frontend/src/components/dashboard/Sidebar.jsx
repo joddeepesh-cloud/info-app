@@ -66,9 +66,9 @@ export default function Sidebar() {
   return (
     <>
       {/* ==================================================== */}
-      {/* DESKTOP SIDEBAR (Visible on md and larger) */}
+      {/* DESKTOP SIDEBAR (Visible on lg and larger) */}
       {/* ==================================================== */}
-      <div className={`hidden md:flex h-screen bg-slate-900 border-r border-slate-800 flex-col justify-between transition-all duration-300 relative shrink-0 z-40 ${
+      <div className={`hidden lg:flex h-screen bg-slate-900 border-r border-slate-800 flex-col justify-between transition-all duration-300 relative shrink-0 z-40 ${
         collapsed ? "w-20" : "w-64"
       }`}>
         <div>
@@ -155,9 +155,9 @@ export default function Sidebar() {
       </div>
 
       {/* ==================================================== */}
-      {/* MOBILE HEADER & BURGER BAR (Visible on screens < md) */}
+      {/* MOBILE HEADER & BURGER BAR (Visible on screens < lg) */}
       {/* ==================================================== */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-slate-900 border-b border-slate-800 flex justify-between items-center px-4 z-40">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-slate-900 border-b border-slate-800 flex justify-between items-center px-4 z-40">
         <Logo size="small" showText={true} />
         <button 
           onClick={() => setMobileDrawerOpen(true)}
@@ -169,7 +169,7 @@ export default function Sidebar() {
 
       {/* MOBILE DRAWER OVERLAY */}
       {mobileDrawerOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex">
+        <div className="fixed inset-0 z-50 lg:hidden flex">
           {/* Backdrop */}
           <div 
             onClick={() => setMobileDrawerOpen(false)}
@@ -233,9 +233,9 @@ export default function Sidebar() {
       )}
 
       {/* ==================================================== */}
-      {/* MOBILE BOTTOM NAVIGATION BAR (Visible on screens < md) */}
+      {/* MOBILE BOTTOM NAVIGATION BAR (Visible on screens < lg) */}
       {/* ==================================================== */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900 border-t border-slate-800/80 flex justify-around items-center z-40 px-2 shadow-2xl pb-safe">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900 border-t border-slate-800/80 flex justify-around items-center z-40 px-2 shadow-2xl pb-safe">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -261,7 +261,7 @@ export default function Sidebar() {
       </div>
       
       {/* Bottom spacing offset to prevent navigation overlay overlapping content */}
-      <div className="md:hidden h-16 shrink-0 pointer-events-none" />
+      <div className="lg:hidden h-16 shrink-0 pointer-events-none" />
     </>
   );
 }

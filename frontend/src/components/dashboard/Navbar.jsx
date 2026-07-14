@@ -41,7 +41,7 @@ export default function Navbar() {
         </span>
 
         {/* Search box */}
-        <div className="relative hidden md:block w-64">
+        <div className="relative hidden lg:block w-64">
           <IoSearchOutline className="absolute left-3 top-2.5 text-slate-500" size={16} />
           <input
             type="text"

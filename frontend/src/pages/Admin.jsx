@@ -489,7 +489,7 @@ export default function Admin() {
       <Sidebar />
 
       {/* Main content block */}
-      <div className="flex-1 flex flex-col h-full p-6 overflow-hidden">
+      <div className="flex-1 flex flex-col h-full p-6 overflow-hidden pt-14 lg:pt-6 pb-16 lg:pb-6">
         <Navbar />
 
         {/* Scrollable container workspace */}
